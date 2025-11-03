@@ -71,6 +71,8 @@ class CommandInterface:
             #! signal.alarm(self.timelimit)
             signal.alarm(1000)
 
+
+
             return self.command_dict[command](args)
         
         except TimeoutException:
@@ -813,30 +815,30 @@ class CommandInterface:
 
                 for col in range(self.width):
                     # straight and 2 diagonals
-                    self.matchLine((1,0), 0, col, 1, 1)
-                    self.matchLine((1,1), 0, col, 1, 1)
-                    self.matchLine((-1,1), 0, col, 1, 1)
+                    self.matchLine((1,0), 0, col, 1)
+                    self.matchLine((1,1), 0, col, 1)
+                    self.matchLine((-1,1), 0, col, 1)
                     # far right
-                    self.matchLine((1,0), self.height-1, col, 1, -1)
-                    self.matchLine((1,1), self.height-1, col, 1, -1)
-                    self.matchLine((-1,1), self.height-1, col, 1, -1)
+                    self.matchLine((1,0), self.height-1, col, -1)
+                    self.matchLine((1,1), self.height-1, col, -1)
+                    self.matchLine((-1,1), self.height-1, col, -1)
                 # compare all horizontals going left
                 for row in range(self.height):
                     # top
-                    self.matchLine((0,1), row, 0, 1, 1)
-                    self.matchLine((1,1), row, 0, 1, 1)
-                    self.matchLine((-1,1), row, 0, 1, 1)
+                    self.matchLine((0,1), row, 0, 1)
+                    self.matchLine((1,1), row, 0, 1)
+                    self.matchLine((-1,1), row, 0, 1)
                     # bottom
-                    self.matchLine((0,1), row, self.width-1, 1, -1)
-                    self.matchLine((1,1), row, self.width-1, 1, -1)
-                    self.matchLine((-1,1), row, self.width-1, 1, -1)
+                    self.matchLine((0,1), row, self.width-1, -1)
+                    self.matchLine((1,1), row, self.width-1, -1)
+                    self.matchLine((-1,1), row, self.width-1, -1)
 
                 # diagonals
-                    self.matchLine((1,1), -1, -1, 0, 1)
-                    self.matchLine((1,1), self.height, self.width, 0, -1)
+                    self.matchLine((1,1), -1, -1, 1)
+                    self.matchLine((1,1), self.height, self.width, -1)
                 # antidiagonals
-                    self.matchLine((-1,1), self.height, -1, 0, 1)
-                    self.matchLine((-1,1), -1, self.width, 0, -1)
+                    self.matchLine((-1,1), self.height, -1, 1)
+                    self.matchLine((-1,1), -1, self.width, -1)
 
             # if player go through player history then call the rotations, have O first because likely to have less of p1
             elif bestType == "O":
@@ -861,7 +863,7 @@ class CommandInterface:
                     for x in range(self.width):
                         self.matchPattern((y, x), 0)
 
-                        
+
         if args != 696969:
             print(self.value)
         return float(self.value)

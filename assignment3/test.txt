@@ -1,0 +1,4 @@
+init_game 1000 1000 0.5 0 
+timelimit 5
+load_patterns emptymatches.txt
+position_evaluation
