@@ -747,11 +747,16 @@ class CommandInterface:
             [] consider both forwards and backwards at same time
         """
         self.value = 0
+
+        # get opp
+        if self.player == 2:
+            self.opp = 1
+
+        self.opp = 2
         # get the pattern
-        for pattern, patVal in self.patterns:
-            self.patVal = patVal
+        for self.pattern, self.patVal in self.patterns:
             # find the first instance of the bestType in pattern
-            bestType = self.findBestType(pattern)
+            bestType = self.findBestType(self.pattern)
             # if walls go through all wall versions then call the rotations
             if bestType == "X":
                 """
@@ -760,39 +765,66 @@ class CommandInterface:
                 # everything is of the form X****
                 # compare all verticals going down
                 for col in range(self._NUMCOLS):
-                    self.matchLine(pattern, (1,0), 0, col, 1, 1)
-                    self.matchLine(pattern, (1,0), self._NUMROWS-1, col, 1, -1)
+                    self.matchLine((1,0), 0, col, 1, 1)
+                    self.matchLine((1,0), self._NUMROWS-1, col, 1, -1)
                 # compare all horizontals going left
                 for row in range(self._NUMROWS):
-                    self.matchLine(pattern, (0,1), row, 0, 1, 1)
-                    self.matchLine(pattern, (0,1), row, self._NUMCOLS-1, 1, -1)
+                    self.matchLine((0,1), row, 0, 1, 1)
+                    self.matchLine((0,1), row, self._NUMCOLS-1, 1, -1)
 
                 # diagonals
-                    self.matchLine(pattern, (1,1), -1, -1, 0, 1)
-                    self.matchLine(pattern, (1,1), self._NUMROWS, self._NUMCOLS, 0, -1)
+                    self.matchLine((1,1), -1, -1, 0, 1)
+                    self.matchLine((1,1), self._NUMROWS, self._NUMCOLS, 0, -1)
                 # antidiagonals
-                    self.matchLine(pattern, (-1,1), self._NUMROWS, -1, 0, 1)
-                    self.matchLine(pattern, (-1,1), -1, self._NUMCOLS, 0, -1)
+                    self.matchLine((-1,1), self._NUMROWS, -1, 0, 1)
+                    self.matchLine((-1,1), -1, self._NUMCOLS, 0, -1)
                 return
             
 
             # if player go through player history then call the rotations, have O first because likely to have less of p1
             elif bestType == "O":
-                return
+                # get a move that needs to be checked ie a cell with an opponents move in it
+                for move in self._moveHistory:
+                    if move[2] == self.opp:
+                        self.matchPattern(move[0], self.pattern.find("O"))
+                    
             elif bestType == "P":
-                return
+                for move in self._moveHistory:
+                    if move[2] == self.player:
+                        self.matchPattern(move[0], self.pattern.find("P"))
             # if empty go through entire board to find it then call the rotations
             elif bestType == "_":
-                return
+                for y in range(self.height):
+                    for x in range(self.width):
+                        if self.board[y][x] == 0:
+                            self.matchPattern((y, x), self.pattern.find("_"))
 
-    def matchPattern(self):
+    def matchPattern(self, pos:tuple, index):
         """
         this function finds the instances of the best type and then calls for all 4 line types and their symmetries
+        args:
+            pos: (row, col)
+            index: (where in the pattern is the first occurence of the type)
         """
-
+        # get pos vertical
+        self.matchLine((1,0), pos[0]-index, pos[1], 1)
+        # get neg vertical
+        self.matchLine((1,0), pos[0]+index, pos[1], -1)
+        # get pos horizontal
+        self.matchLine((0,1), pos[0], pos[1]-index, 1)
+        # get neg horizontal
+        self.matchLine((0,1), pos[0], pos[1]+index, -1)
+        # get pos diagonal
+        self.matchLine((1,1), pos[0]-index, pos[1]-index, 1)
+        # get neg diagonal
+        self.matchLine((1,1), pos[0]+index, pos[1]+index, -1)
+        # get pos antidiagonal
+        self.matchLine((-1,1), pos[0]+index, pos[1]-index, 1)
+        # get neg antidiagonal
+        self.matchLine((-1,1), pos[0]-index, pos[1]+index, -1)
         return
     
-    def matchLine(self, pattern, lineType:tuple, row, col, direction):
+    def matchLine(self, lineType:tuple, row, col, direction):
         """
         This function adds the score for a specific line type given a pattern, start point and direction
         args:
@@ -816,32 +848,29 @@ class CommandInterface:
         
         startRow = row
         startCol = col
-        
-        # get opp
-        if self.player == 2:
-            opp = 1
-
-        opp = 2
 
 
         row -= rowInc
         col -= colInc
 
-        for point in pattern:
+        for point in self.pattern:
             # go to the next row and col
             row += rowInc
             col += colInc
             if point == "*":
                 # we do not care about this one for it can never break the pattern
                 continue
-            elif point == "X":
-                if 0 <= row < self._NUMCOLS or 0 <= col < self._NUMCOLS:
+            # check if the point is out of bounds
+            elif not(0 <= row < self._NUMCOLS or 0 <= col < self._NUMCOLS):
+                # if out of bounds and not a wall or * then it fails
+                if point != "X":
                     return False
+            # must be in bounds so no error thrown
             elif point == "P":
                 if self.board[row][col] != self.player:
                     return False
             elif point == "O":
-                if self.board[row][col] != opp:
+                if self.board[row][col] != self.opp:
                     return False
             elif point == "_":
                 if self.board[row][col] != 0:
@@ -859,6 +888,7 @@ class CommandInterface:
 
         self.matchPattern.append((startRow, startCol), (row, col), lineType)
         self.value += self.patVal
+
 
     def is_line_subset(self, line1_start, line1_end, line2_start, line2_end, direction1, direction2):
         """
@@ -914,18 +944,6 @@ class CommandInterface:
             p_min, p_max = sorted([p1[1], p2[1]])
             q_min, q_max = sorted([q1[1], q2[1]])
             return q_min <= p_min and p_max <= q_max
-
-
-    # Example usage:
-    line1 = ((1, 1), (3, 3))  # Diagonal from (1,1) to (3,3)
-    line2 = ((0, 0), (5, 5))  # Diagonal from (0,0) to (5,5)
-
-    print(is_line_subset(line1[0], line1[1], line2[0], line2[1]))  # True
-
-    line3 = ((0, 0), (3, 0))  # Horizontal
-    line4 = ((1, 0), (2, 0))  # Horizontal subset
-
-    print(is_line_subset(line4[0], line4[1], line3[0], line3[1]))  # True
 
 
     def findBestType(self, pattern):
