@@ -42,8 +42,7 @@ class CommandInterface:
 
         # This variable keeps track of the maximum allowed time to solve a position
         # default value
-        #self.timelimit = 1
-        self.timelimit = 10000
+        self.timelimit = 1
         
         self.patterns = [] # you may change this
         self.patternVal = {}
@@ -70,8 +69,8 @@ class CommandInterface:
         try:
             signal.signal(signal.SIGALRM, handler)
             signal.alarm(self.timelimit)
-            
             return self.command_dict[command](args)
+        
         except TimeoutException:
             print(f"Command '{s}' timed out after {self.timelimit} seconds.", file=sys.stderr)
             print("= -1\n")
@@ -194,9 +193,8 @@ class CommandInterface:
             else:
                 self.player = 1
 
-        #defualt time limit
-        # self.timelimit = 1
-        self.timelimit = 10000
+        #default time limit
+        self.timelimit = 1
 
         # Game state  
         # all caps = const

@@ -28,7 +28,7 @@ load_patterns twopattern3.txt
 move_evaluation
 policy_moves
 init_game 1000 1000 0.5 0 
-timelimit 1000
+timelimit 5
 load_patterns randompattern.txt
 position_evaluation
 policy_moves
