@@ -1,6 +1,11 @@
 # CMPUT 455 Assignment 3 starter code (PoE2)
 # Implement the specified commands to complete the assignment
 # Full assignment specification on Canvas
+"""
+todo:
+    [] undo exception for when the are undoing moves that were initialized, but we don't know what previous move was so shouldn't be able to do
+"""
+
 
 import sys
 import signal
@@ -238,20 +243,25 @@ class CommandInterface:
 
     def make_move(self, x, y):
         self.board[y][x] = self.player
+        self._moveHistory.append(((y,x),(-1, -1), self.player , -1))
         if self.player == 1:
             self.player = 2
         else:
             self.player = 1
 
-    def undo_move(self, x, y):
+    def undo_moveSimple(self, x, y):
+        """
+        Q! there is no command that says undo, so it is not able to be tested
+        """
         self.board[y][x] = 0
+        self._moveHistory.pop()
         if self.player == 1:
             self.player = 2
         else:
             self.player = 1
 
 
-    def undo_move_complex(self):
+    def undo_move(self):
         '''
         Undoes the last move.
 
@@ -476,7 +486,7 @@ class CommandInterface:
         # update the board state
         
         # calculate the score through all the four possible directions of lines
-        self._calcScore(row, col)
+        self.calculate_score(row, col)
 
         # keep track of the number of moves played
         self._numMoves += 1 
@@ -729,22 +739,45 @@ class CommandInterface:
     
     # new function to be implemented for assignment 3
     def policy_moves(self, args):
-        raise NotImplementedError("This command is not yet implemented.")
-        return True
-    
+        policy = []
+        movesEval = self.move_evaluation()
+        total = sum(movesEval)
+        low = min(movesEval)
+        reduce = (-1*low+1)
+        dom = total + len(total)*reduce
+        for ev in movesEval:
+            policy.append(round((ev + reduce)/dom, 3))
+
+        return policy
+
     # new function to be implemented for assignment 3
     def move_evaluation(self, args):
-        raise NotImplementedError("This command is not yet implemented.")
-        return True
-    
+        """
+        Q! 
+            - does it matter if the position is terminal or not?
+        """
+        # check for empty moves, faster than going through it twice with get_moves
+        moveVal = []
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.board[y][x] == 0:
+                    self.make_move(x, y)
+                    moveVal.append(-1 * round(self.position_evaluation()), 1)
+                    self.undo_moveSimple(x, y)
+        
+        print(*moveVal)
+        return moveVal
+
+
     # new function to be implemented for assignment 3
-    def position_evaluation(self, args):
+    def position_evaluation(self, args)-> float:
         """
         todo:
-            [] consider subsets using the fact we look at the longest first
-            [] consider if the length pushs the rotation of of bounds when it is not supposed to be 
+            [x] consider subsets using the fact we look at the longest first
+            [x] consider if the length pushs the rotation of of bounds when it is not supposed to be 
             [] if already found it for same pattern than return right away
             [] consider both forwards and backwards at same time
+                - kinda pointless to do at same time
         """
         self.value = 0
 
@@ -778,8 +811,6 @@ class CommandInterface:
                 # antidiagonals
                     self.matchLine((-1,1), self._NUMROWS, -1, 0, 1)
                     self.matchLine((-1,1), -1, self._NUMCOLS, 0, -1)
-                return
-            
 
             # if player go through player history then call the rotations, have O first because likely to have less of p1
             elif bestType == "O":
@@ -787,6 +818,7 @@ class CommandInterface:
                 for move in self._moveHistory:
                     if move[2] == self.opp:
                         self.matchPattern(move[0], self.pattern.find("O"))
+                        
                     
             elif bestType == "P":
                 for move in self._moveHistory:
@@ -798,6 +830,7 @@ class CommandInterface:
                     for x in range(self.width):
                         if self.board[y][x] == 0:
                             self.matchPattern((y, x), self.pattern.find("_"))
+        return self.value
 
     def matchPattern(self, pos:tuple, index):
         """
@@ -822,7 +855,6 @@ class CommandInterface:
         self.matchLine((-1,1), pos[0]+index, pos[1]-index, 1)
         # get neg antidiagonal
         self.matchLine((-1,1), pos[0]-index, pos[1]+index, -1)
-        return
     
     def matchLine(self, lineType:tuple, row, col, direction):
         """
