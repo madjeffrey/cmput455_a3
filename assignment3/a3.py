@@ -707,23 +707,24 @@ class CommandInterface:
                 # check if it is at the front
                 if pat[0] == "X":
                     while pat[1] == "*":
-                        self.patterns.append(copy.deepcopy(pat))
-                        self.patternVal[str(copy.deepcopy(pat))] = float(val)
+                        if (str(copy.deepcopy(pat)), float(val)) not in self.patterns:
+                            self.patterns.append((str(copy.deepcopy(pat)), float(val)))
                         pat.replace("X*", "X", 1)
 
                 # check if it is at the back
                 elif pat[-1] == "X":
                     while pat[-2] == "*":
                         # reverse order so it is always X****
-                        self.patterns.append(copy.deepcopy(pat)[::-1])
-                        self.patternVal[str(copy.deepcopy(pat)[::-1])] = float(val)
+                        if (str(copy.deepcopy(pat)[::-1]), float(val)) not in self.patterns:
+                            self.patterns.append((str(copy.deepcopy(pat)[::-1]), float(val)))
                         pat.replace("*X", "X", 1)
 
                 # val is a float so we can do arithmetic pat is a string
-                self.patterns.append(pat)
-                self.patternVal[pat] = float(val)
+                if (pat, float(val)) not in self.patterns:
+                    self.patterns.append((pat, float(val)))
         
-        self.patterns = sorted(self.patterns, key=len, reverse=True)
+        # Sort by string length (descending), then by float value (descending) as tiebreaker
+        self.patterns = sorted(self.patterns, key=lambda x: (len(x[0]), x[1]), reverse=True)
         return True
     
     # new function to be implemented for assignment 3
@@ -747,7 +748,8 @@ class CommandInterface:
         """
         self.value = 0
         # get the pattern
-        for pattern in self.patterns:
+        for pattern, patVal in self.patterns:
+            self.patVal = patVal
             # find the first instance of the bestType in pattern
             bestType = self.findBestType(pattern)
             # if walls go through all wall versions then call the rotations
@@ -790,12 +792,12 @@ class CommandInterface:
 
         return
     
-    def matchLine(self, pattern, type:tuple, row, col, direction):
+    def matchLine(self, pattern, lineType:tuple, row, col, direction):
         """
         This function adds the score for a specific line type given a pattern, start point and direction
         args:
             pattern: the string to be compared
-            type: (rowShift, colShift) | (1,0) = vertical | (0,1) = horizontal | (1,1) = diagonal | (-1, 1) = antiDiagonal
+            lineType: (rowShift, colShift) | (1,0) = vertical | (0,1) = horizontal | (1,1) = diagonal | (-1, 1) = antiDiagonal
             row: the row pattern[0] is in
             col: the col pattern[0] is in
             direction: 1 = left to right/ top to bottom or top right | -1 = reverse that
@@ -809,8 +811,8 @@ class CommandInterface:
 
         ## way to optimize by stopping subsets here
 
-        rowInc = (direction*type[0])
-        colInc = (direction*type[1])
+        rowInc = (direction*lineType[0])
+        colInc = (direction*lineType[1])
         
         startRow = row
         startCol = col
@@ -831,7 +833,7 @@ class CommandInterface:
             col += colInc
             if point == "*":
                 # we do not care about this one for it can never break the pattern
-                pass
+                continue
             elif point == "X":
                 if 0 <= row < self._NUMCOLS or 0 <= col < self._NUMCOLS:
                     return False
@@ -850,11 +852,80 @@ class CommandInterface:
         # the pattern matches
         # check if the pattern is a subset
         for match in self.patternMatches:
-            if match[0][1] == startRow
+            # checks for horizontal and vertical
+            if self.is_line_subset(match[0], match[1], (startRow, startCol), (row,col), match[2], lineType):
+                # i don't have to care about tie breakers because that has already been handled
+                return False
 
-        # add pattern to the list of maps and add the score to the value of the state
-        self.patternMatches.append(((startRow, startCol), (row, col)))
-        self.value += self.patternVal[pattern]
+        self.matchPattern.append((startRow, startCol), (row, col), lineType)
+        self.value += self.patVal
+
+    def is_line_subset(self, line1_start, line1_end, line2_start, line2_end, direction1, direction2):
+        """
+        Check if line1 is a subset of line2.
+        Lines can only be: vertical, horizontal, diagonal, or anti-diagonal.
+        
+        Returns True if line1 is entirely contained within line2.
+        """
+        
+        # First check: Must be the same line type (same direction)
+        if direction1 != direction2:
+            return False
+        
+        # Second check: Must be collinear (on the same infinite line)
+        if not self.are_collinear(line1_start, line1_end, line2_start, line2_end, direction1):
+            return False
+        
+        # Third check: line1's endpoints must be within line2's range
+        return self.is_segment_within(line1_start, line1_end, line2_start, line2_end)
+
+
+    def are_collinear(p1, p2, q1, q2, direction):
+        """Check if two line segments are on the same infinite line."""
+        if direction == "vertical":
+            return p1[0] == q1[0]  # Same x coordinate
+        
+        elif direction == "horizontal":
+            return p1[1] == q1[1]  # Same y coordinate
+        
+        elif direction == "diagonal":
+            # For diagonal: y - x must be constant
+            return (p1[1] - p1[0]) == (q1[1] - q1[0])
+        
+        elif direction == "antidiagonal":
+            # For antidiagonal: y + x must be constant
+            return (p1[1] + p1[0]) == (q1[1] + q1[0])
+
+
+    def is_segment_within(p1, p2, q1, q2):
+        """
+        Check if segment [p1, p2] is within segment [q1, q2].
+        Assumes they're already collinear and same direction.
+        """
+        # Normalize: ensure start < end for both segments
+        # Use the dimension that changes (x for horizontal, y for vertical, etc.)
+        
+        if p1[0] != p2[0]:  # Non-vertical: use x coordinate
+            p_min, p_max = sorted([p1[0], p2[0]])
+            q_min, q_max = sorted([q1[0], q2[0]])
+            return q_min <= p_min and p_max <= q_max
+        
+        else:  # Vertical: use y coordinate
+            p_min, p_max = sorted([p1[1], p2[1]])
+            q_min, q_max = sorted([q1[1], q2[1]])
+            return q_min <= p_min and p_max <= q_max
+
+
+    # Example usage:
+    line1 = ((1, 1), (3, 3))  # Diagonal from (1,1) to (3,3)
+    line2 = ((0, 0), (5, 5))  # Diagonal from (0,0) to (5,5)
+
+    print(is_line_subset(line1[0], line1[1], line2[0], line2[1]))  # True
+
+    line3 = ((0, 0), (3, 0))  # Horizontal
+    line4 = ((1, 0), (2, 0))  # Horizontal subset
+
+    print(is_line_subset(line4[0], line4[1], line3[0], line3[1]))  # True
 
 
     def findBestType(self, pattern):
