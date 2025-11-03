@@ -68,7 +68,9 @@ class CommandInterface:
             return False
         try:
             signal.signal(signal.SIGALRM, handler)
-            signal.alarm(self.timelimit)
+            #! signal.alarm(self.timelimit)
+            signal.alarm(1000)
+
             return self.command_dict[command](args)
         
         except TimeoutException:
@@ -842,7 +844,6 @@ class CommandInterface:
                 for move in self._moveHistory:
                     if move[2] == self.opp:
                         self.matchPattern(move[0], self.pattern.find("O"))
-                        
                     
             elif bestType == "P":
                 for move in self._moveHistory:
@@ -854,6 +855,13 @@ class CommandInterface:
                     for x in range(self.width):
                         if self.board[y][x] == 0:
                             self.matchPattern((y, x), self.pattern.find("_"))
+       
+            elif bestType == "*":
+                for y in range(self.height):
+                    for x in range(self.width):
+                        self.matchPattern((y, x), 0)
+
+                        
         if args != 696969:
             print(self.value)
         return float(self.value)
@@ -1033,22 +1041,38 @@ class CommandInterface:
         numEmpty = (self._NUMTILES - self._numMoves) * 8 + self._NUMTILES
         numMoves = ((self._numMoves+1)//2) * 8 + self._numMoves # num moves p1
         numMovesOpp = (self._numMoves//2) * 8 + self._numMoves # num moves p2
-        least = min(numWalls, numEmpty, numMoves, numMovesOpp)
+        
+        findMin = []
+        
+        if hasWalls:
+            findMin.append(numWalls)
+        if hasPlayer:
+            findMin.append(numMoves)
+        if hasOpp:
+            findMin.append(numMovesOpp)
+        if hasEmpty:
+            findMin.append(numEmpty)
+
+        # if it is a pattern of only stars
+        if findMin == []:
+            return "*"
+        
+        least = min(findMin)
 
         if self.player == 2:
             tmp = numMovesOpp
             numMovesOpp = numMoves
             numMoves = tmp
 
-        if least == numWalls and hasWalls:
+        if least == numWalls:
             return "X"
-        if least == numMoves and hasPlayer:
+        if least == numMoves:
             return "P"
-        if least == numMovesOpp and hasOpp:
+        if least == numMovesOpp:
             return "O"
-        if least == numEmpty and hasEmpty:
+        if least == numEmpty:
             return "_"
-    
+        
 
 if __name__ == "__main__":
     interface = CommandInterface()
