@@ -15,7 +15,7 @@ options:
 """
 
 import sys
-assert sys.version.startswith("3.8"), "Use Python 3.8"
+# assert sys.version.startswith("3.8"), "Use Python 3.8"
 
 from datetime import datetime
 import os

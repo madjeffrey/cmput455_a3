@@ -40,7 +40,9 @@ class CommandInterface:
         
 
         # This variable keeps track of the maximum allowed time to solve a position
-        self.timelimit = 1
+        # default value
+        #self.timelimit = 1
+        self.timelimit = 10000
         
         self.patterns = [] # you may change this
         self.patternVal = {}
@@ -148,6 +150,7 @@ class CommandInterface:
         self.height = h
         self.handicap = p
         self.patternMatches = []
+        self._moveHistory = [] #((row:int,col:int),(_p1Score:float, _p2Score:float), cur_player:int, winner:int)
         if s == 0:
             self.score_cutoff = float("inf")
         else:
@@ -190,24 +193,24 @@ class CommandInterface:
             else:
                 self.player = 1
 
-        self.timelimit = 1
+        #defualt time limit
+        # self.timelimit = 1
+        self.timelimit = 10000
 
         # Game state  
         # all caps = const
-        self._NUMCOLS = int(self.width)
-        self._NUMROWS = int(self.height)
         self._SCORECUTOFF = float(s)
-        self._NUMTILES = self._NUMCOLS * self._NUMROWS
-        self._HANDICAP = float(self.handicap)
+        self._NUMTILES = self.width * self.height
+        self._HANDICAP = self.handicap
         self._won = 0
         self._numMoves = 0
-        self._moveHistory = [] #((row:int,col:int),(_p1Score:float, _p2Score:float), cur_player:int, winner:int)
         self.player= self.player # 1 _player 1 or 2 _player 2
         self._p1Score = int()
         self._p2Score = float(p)
         self._newGame = True ## could change this whole check to just be if the board is empty, but this would be called often, and so it would be slow to compute
 
-        self._p1Score, self._p2Score = self._calcScoreFull()
+        self._p1Score, self._p2Score = self.calculate_scoreFull()
+        self.is_terminalFast(self._p1Score, self._p2Score)
 
         return True
 
@@ -221,6 +224,16 @@ class CommandInterface:
         >> timelimit <seconds>
         Sets the wall-clock time limit used by 'solve'.
         - Accepts a single non-negative integer.
+        """
+        if not self.arg_check(args, "s"):
+            return False
+
+        self.timelimit = int(args[0])
+        return True
+    
+    def timeLimit(self, args):
+        """
+        this is for me because it has error to call int object
         """
         if not self.arg_check(args, "s"):
             return False
@@ -279,7 +292,7 @@ class CommandInterface:
         
         status = self._moveHistory.pop()
         self._numMoves -= 1
-        self._board[status[0][0]][status[0][1]] = 0
+        self.board[status[0][0]][status[0][1]] = 0
         if self._moveHistory:
             newState = self._moveHistory[-1]
             self._p1Score = newState[1][0]
@@ -396,7 +409,7 @@ class CommandInterface:
                 return True, 2
 
 
-    def is_terminalFast(self): 
+    def is_terminalFast(self, p1_score=-1, p2_score=-1): 
         """
         faster considering slow implementation of calc score
         this changes order to minimize calls to calculate_scoreFull
@@ -412,8 +425,9 @@ class CommandInterface:
         
         if self.score_cutoff == float("inf") and not full:
             return False, 0
-            
-        p1_score, p2_score = self.calculate_scoreFull() # this is what I need to change
+        
+        if p1_score == -1 or p2_score == -1:
+            p1_score, p2_score = self.calculate_scoreFull() # this is what I need to change
 
         if full:
             if p1_score > p2_score:
@@ -464,8 +478,11 @@ class CommandInterface:
         return True
             
     
-    def is_pos_avail(self, c, r):
-        return self.board[r][c] == 0        
+    def isLegal(self, c, r):
+        if self._won == 0 and self.board[r][c] == 0:
+            return True
+        
+        return False      
     
     # this function may be modified as needed, but should behave as expected
     def play(self, args):
@@ -473,12 +490,12 @@ class CommandInterface:
             >> play <col> <row>
             Places current player's piece at position (<col>, <row>).
         '''
-        row = args[1]
-        col = args[0]
-        if not self.isLegal(row, col):
+        row = int(args[1])
+        col = int(args[0])
+        if not self.isLegal(col, row):
             return -1
         if self._won != 0:
-            return 2
+            return self._won
 
         ## could these be assertions, or then this would stop the program which is not what I want
         # It is not a newGame since a move has been played
@@ -491,13 +508,13 @@ class CommandInterface:
         # keep track of the number of moves played
         self._numMoves += 1 
 
-        self.gameOver()
+        self.is_terminal()
 
         # add the move history to the list for undo
         self._moveHistory.append(((row,col),(self._p1Score, self._p2Score), self.player, self._won))
 
         # update the board needs to happen after calcScore because it needs to check for neighbors that are not the new move
-        self._board[row][col] = self._currentPlayer
+        self.board[row][col] = self.player
         if self.player== 2:
             self.player= 1
         else:
@@ -550,8 +567,8 @@ class CommandInterface:
         adds the score for all types of lines that can be made Linearly
         """
         # assert proper row and col is given
-        assert 0 <= row < self._NUMROWS, "row is out of bounds"
-        assert 0 <= col < self._NUMCOLS, "col is out of bounds"
+        assert 0 <= row < self.height, "row is out of bounds"
+        assert 0 <= col < self.width, "col is out of bounds"
 
         flag = 0
         # check vertical neighbors
@@ -598,11 +615,11 @@ class CommandInterface:
         numAbove = 0
         numBelow = 0
 
-        while 0 <= negRow < self._NUMROWS and 0 <= negCol < self._NUMCOLS and self._board[negRow][negCol] == self._currentPlayer:
+        while 0 <= negRow < self.height and 0 <= negCol < self.width and self.board[negRow][negCol] == self.player:
             numBelow += 1
             negRow += b
             negCol += d
-        while 0 <= posRow < self._NUMROWS and 0 <= posCol < self._NUMCOLS and self._board[posRow][posCol] == self._currentPlayer:
+        while 0 <= posRow < self.height and 0 <= posCol < self.width and self.board[posRow][posCol] == self.player:
             numAbove += 1
             posRow += a
             posCol += c
@@ -628,7 +645,7 @@ class CommandInterface:
 
         if numAbove != 0:
             # this should already hold and may be redundant
-            assert 0 <= posRow < self._NUMROWS and 0 <= posCol < self._NUMCOLS, "checking for an above cell that is out of bounds"
+            assert 0 <= posRow < self.height and 0 <= posCol < self.width, "checking for an above cell that is out of bounds"
             neigh = self.__checkIfNeighbor(posRow, posCol)
             if self.player== 1:
                 if not neigh:
@@ -643,7 +660,7 @@ class CommandInterface:
 
         if numBelow != 0:
             # this should already hold and may be redundant
-            assert 0 <= negRow < self._NUMROWS and 0 <= negCol < self._NUMCOLS, "checking for a below cell that is out of bounds"
+            assert 0 <= negRow < self.height and 0 <= negCol < self.width, "checking for a below cell that is out of bounds"
             neigh = self.__checkIfNeighbor(negRow, negCol)
             if self.player== 1:
                 if not neigh:
@@ -664,8 +681,8 @@ class CommandInterface:
         used to check if a given tile has any neighbors
         """
         # assert proper row and col is given
-        assert 0 <= row < self._NUMROWS, "row is out of bounds, neigh"
-        assert 0 <= col < self._NUMCOLS, "col is out of bounds, neigh"
+        assert 0 <= row < self.height, "row is out of bounds, neigh"
+        assert 0 <= col < self.width, "col is out of bounds, neigh"
 
         # check antidia, diagonal, horizontal, vertical
         return self.__checkSuperset(row, col, -1, 1) or self.__checkSuperset(row, col, 1, 1) or self.__checkSuperset(row, col, 0, 1) or self.__checkSuperset(row, col, 1, 0)
@@ -684,13 +701,13 @@ class CommandInterface:
         posCol = col + (1*colShift)
         negCol = col + (-1*colShift)
 
-        if 0 <= negRow < self._NUMROWS and 0 <= negCol < self._NUMCOLS:
-            if self._board[negRow][negCol] == self._currentPlayer:
+        if 0 <= negRow < self.height and 0 <= negCol < self.width:
+            if self.board[negRow][negCol] == self.player:
                 return True
 
-        if 0 <= posRow < self._NUMROWS and 0 <= posCol < self._NUMCOLS:
+        if 0 <= posRow < self.height and 0 <= posCol < self.width:
             ##s can update it so that there is priority for each players move or only your moves count
-            if self._board[posRow][posCol] == self._currentPlayer:
+            if self.board[posRow][posCol] == self.player:
                 return True
 
         return False
@@ -740,7 +757,7 @@ class CommandInterface:
     # new function to be implemented for assignment 3
     def policy_moves(self, args):
         policy = []
-        movesEval = self.move_evaluation()
+        movesEval = self.move_evaluation(())
         total = sum(movesEval)
         low = min(movesEval)
         reduce = (-1*low+1)
@@ -762,7 +779,7 @@ class CommandInterface:
             for x in range(self.width):
                 if self.board[y][x] == 0:
                     self.make_move(x, y)
-                    moveVal.append(-1 * round(self.position_evaluation()), 1)
+                    moveVal.append(-1 * round(self.position_evaluation(())), 1)
                     self.undo_moveSimple(x, y)
         
         print(*moveVal)
@@ -797,20 +814,20 @@ class CommandInterface:
                 """
                 # everything is of the form X****
                 # compare all verticals going down
-                for col in range(self._NUMCOLS):
+                for col in range(self.width):
                     self.matchLine((1,0), 0, col, 1, 1)
-                    self.matchLine((1,0), self._NUMROWS-1, col, 1, -1)
+                    self.matchLine((1,0), self.height-1, col, 1, -1)
                 # compare all horizontals going left
-                for row in range(self._NUMROWS):
+                for row in range(self.height):
                     self.matchLine((0,1), row, 0, 1, 1)
-                    self.matchLine((0,1), row, self._NUMCOLS-1, 1, -1)
+                    self.matchLine((0,1), row, self.width-1, 1, -1)
 
                 # diagonals
                     self.matchLine((1,1), -1, -1, 0, 1)
-                    self.matchLine((1,1), self._NUMROWS, self._NUMCOLS, 0, -1)
+                    self.matchLine((1,1), self.height, self.width, 0, -1)
                 # antidiagonals
-                    self.matchLine((-1,1), self._NUMROWS, -1, 0, 1)
-                    self.matchLine((-1,1), -1, self._NUMCOLS, 0, -1)
+                    self.matchLine((-1,1), self.height, -1, 0, 1)
+                    self.matchLine((-1,1), -1, self.width, 0, -1)
 
             # if player go through player history then call the rotations, have O first because likely to have less of p1
             elif bestType == "O":
@@ -893,7 +910,7 @@ class CommandInterface:
                 # we do not care about this one for it can never break the pattern
                 continue
             # check if the point is out of bounds
-            elif not(0 <= row < self._NUMCOLS or 0 <= col < self._NUMCOLS):
+            elif not(0 <= row < self.width or 0 <= col < self.width):
                 # if out of bounds and not a wall or * then it fails
                 if point != "X":
                     return False
@@ -998,7 +1015,7 @@ class CommandInterface:
 
         # does not have any rotations to consider
         # add punishment for to all for the number of cells to check to consider all possible locations
-        numWalls = (self._NUMCOLS*2 + self._NUMROWS*2 + 4)*2
+        numWalls = (self.width*2 + self.height*2 + 4)*2
         # multiply by 8 because we would need to consider all 8 rotations
         numEmpty = (self._NUMTILES - self._numMoves) * 8 + self._NUMTILES
         numMoves = ((self._numMoves+1)//2) * 8 + self._numMoves # num moves p1
