@@ -4,8 +4,7 @@
 """
 todo:
     [] undo exception for when the are undoing moves that were initialized, but we don't know what previous move was so shouldn't be able to do
-    [] time outs caused by empty boards and lots of patterns
-    """
+"""
 
 
 import sys
@@ -728,7 +727,7 @@ class CommandInterface:
 
                 # eliminate any doubles on the end, since they don't add any context
                 while pat.find("XX") != -1:
-                    pat = pat.replace("XX", "X")
+                    pat.replace("XX", "X")
 
                 # val is a float so we can do arithmetic pat is a string
                 if (pat, float(val)) not in self.patterns:
@@ -741,15 +740,14 @@ class CommandInterface:
     # new function to be implemented for assignment 3
     def policy_moves(self, args):
         policy = []
-        movesEval = self.move_evaluation((696969))
+        movesEval = self.move_evaluation(())
         total = sum(movesEval)
         low = min(movesEval)
         reduce = (-1*low+1)
-        dom = total + len(movesEval)*reduce
+        dom = total + len(total)*reduce
         for ev in movesEval:
             policy.append(round((ev + reduce)/dom, 3))
 
-        print(*policy)
         return policy
 
     # new function to be implemented for assignment 3
@@ -764,12 +762,10 @@ class CommandInterface:
             for x in range(self.width):
                 if self.board[y][x] == 0:
                     self.make_move(x, y)
-                    moveVal.append(-1*self.position_evaluation(696969))
+                    moveVal.append(-1 * round(self.position_evaluation(())), 1)
                     self.undo_moveSimple(x, y)
         
-        moves  = [round(x, 1) if round(x, 1) != 0 else 0 for x in moveVal]
-        if args != 696969:
-            print(*moves)
+        print(*moveVal)
         return moveVal
 
 
@@ -780,24 +776,16 @@ class CommandInterface:
             [x] consider subsets using the fact we look at the longest first
             [x] consider if the length pushs the rotation of of bounds when it is not supposed to be 
             [] if already found it for same pattern than return right away
-                - idk if this is possible
             [] consider both forwards and backwards at same time
                 - kinda pointless to do at same time
-
-
-        todo:**
-            [x] consider diagonal lines that stem from the perimeter
-
         """
-        # new position to evaluate so reset parameters
-        self.patternMatches = []
         self.value = 0
 
         # get opp
         if self.player == 2:
             self.opp = 1
-        else:
-            self.opp = 2
+
+        self.opp = 2
         # get the pattern
         for self.pattern, self.patVal in self.patterns:
             # find the first instance of the bestType in pattern
@@ -806,11 +794,13 @@ class CommandInterface:
             if bestType == "X":
                 """
                 need to consider X* since * can be another wall so the pruning does not help, really the only way is that I have to compare it multiple times, so just create all combinations
+
+                todo:**
+                    [ ] consider diagonal lines that stem from the top and bottom
                 """
                 # everything is of the form X****
                 # compare all verticals going down
                 #! could save time by doing some check for length being cut off so only consider long enough diagonals
-
                 for col in range(self.width):
                     # straight and 2 diagonals
                     self.matchLine((1,0), 0, col, 1, 1)
@@ -856,9 +846,7 @@ class CommandInterface:
                     for x in range(self.width):
                         if self.board[y][x] == 0:
                             self.matchPattern((y, x), self.pattern.find("_"))
-        if args != 696969:
-            print(self.value)
-        return float(self.value)
+        return self.value
 
     def matchPattern(self, pos:tuple, index):
         """
@@ -919,13 +907,11 @@ class CommandInterface:
             col += colInc
 
             # check if the point is out of bounds
-            if row < 0 or row >= self.height or col < 0 or col >= self.width:
+            if not(0 <= row < self.width or 0 <= col < self.width):
                 # if out of bounds and not a wall or * then it fails
                 if point != "X":
                     return False
             # star must be in boundsyy
-            elif point == "X":
-                return False
             elif point == "*":
                 continue
             # must be in bounds so no error thrown
@@ -939,22 +925,21 @@ class CommandInterface:
                 if self.board[row][col] != 0:
                     return False
             else:
-                assert False, f"{point} | got a wrong pattern match"
+                assert False, "got a wrong pattern match"
             
         # the pattern matches
         # check if the pattern is a subset
         for match in self.patternMatches:
             # checks for horizontal and vertical
-            # check if line1 is a subset of line2
             if self.is_line_subset(match[0], match[1], (startRow, startCol), (row,col), match[2], lineType):
                 # i don't have to care about tie breakers because that has already been handled
                 return False
 
-        self.patternMatches.append(((startRow, startCol), (row, col), lineType))
+        self.matchPattern.append((startRow, startCol), (row, col), lineType)
         self.value += self.patVal
 
 
-    def is_line_subset(self, line2_start, line2_end, subsetStart, subsetEnd, direction1, direction2):
+    def is_line_subset(self, line1_start, line1_end, line2_start, line2_end, direction1, direction2):
         """
         Check if line1 is a subset of line2.
         Lines can only be: vertical, horizontal, diagonal, or anti-diagonal.
@@ -967,31 +952,31 @@ class CommandInterface:
             return False
         
         # Second check: Must be collinear (on the same infinite line)
-        if not self.are_collinear(subsetStart, subsetEnd, line2_start, line2_end, direction1):
+        if not self.are_collinear(line1_start, line1_end, line2_start, line2_end, direction1):
             return False
         
         # Third check: line1's endpoints must be within line2's range
-        return self.is_segment_within(subsetStart, subsetEnd, line2_start, line2_end)
+        return self.is_segment_within(line1_start, line1_end, line2_start, line2_end)
 
 
-    def are_collinear(self,p1, p2, q1, q2, direction):
+    def are_collinear(p1, p2, q1, q2, direction):
         """Check if two line segments are on the same infinite line."""
-        if direction == (1,0):
-            return p1[1] == q1[1]  # Same col coordinate
+        if direction == "vertical":
+            return p1[0] == q1[0]  # Same x coordinate
         
-        elif direction == (0,1):
-            return p1[0] == q1[0]  # Same row coordinate
+        elif direction == "horizontal":
+            return p1[1] == q1[1]  # Same y coordinate
         
-        elif direction == (1,1):
+        elif direction == "diagonal":
             # For diagonal: y - x must be constant
             return (p1[1] - p1[0]) == (q1[1] - q1[0])
         
-        elif direction == (-1,1):
+        elif direction == "antidiagonal":
             # For antidiagonal: y + x must be constant
             return (p1[1] + p1[0]) == (q1[1] + q1[0])
 
 
-    def is_segment_within(self, p1, p2, q1, q2):
+    def is_segment_within(p1, p2, q1, q2):
         """
         Check if segment [p1, p2] is within segment [q1, q2].
         Assumes they're already collinear and same direction.
@@ -999,14 +984,14 @@ class CommandInterface:
         # Normalize: ensure start < end for both segments
         # Use the dimension that changes (x for horizontal, y for vertical, etc.)
         
-        if p1[1] != p2[1]:  # Non-vertical: use x coordinate
-            p_min, p_max = sorted([p1[1], p2[1]])
-            q_min, q_max = sorted([q1[1], q2[1]])
+        if p1[0] != p2[0]:  # Non-vertical: use x coordinate
+            p_min, p_max = sorted([p1[0], p2[0]])
+            q_min, q_max = sorted([q1[0], q2[0]])
             return q_min <= p_min and p_max <= q_max
         
         else:  # Vertical: use y coordinate
-            p_min, p_max = sorted([p1[0], p2[0]])
-            q_min, q_max = sorted([q1[0], q2[0]])
+            p_min, p_max = sorted([p1[1], p2[1]])
+            q_min, q_max = sorted([q1[1], q2[1]])
             return q_min <= p_min and p_max <= q_max
 
 
@@ -1055,4 +1040,3 @@ class CommandInterface:
 if __name__ == "__main__":
     interface = CommandInterface()
     interface.main_loop()
-    
