@@ -793,6 +793,7 @@ class CommandInterface:
         """
         # new position to evaluate so reset parameters
         self.patternMatches = []
+        ## seems like something is wrong with my subset functino for pattern matches
         self.value = 0
 
         # get opp
@@ -812,7 +813,6 @@ class CommandInterface:
                 # everything is of the form X****
                 # compare all verticals going down
                 #! could save time by doing some check for length being cut off so only consider long enough diagonals
-
                 for col in range(self.width):
                     # straight and 2 diagonals
                     self.matchLine((1,0), 0, col, 1)
@@ -839,6 +839,7 @@ class CommandInterface:
                 # antidiagonals
                     self.matchLine((-1,1), self.height, -1, 1)
                     self.matchLine((-1,1), -1, self.width, -1)
+                print("X", self.patternMatches)
 
             # if player go through player history then call the rotations, have O first because likely to have less of p1
             elif bestType == "O":
@@ -846,22 +847,26 @@ class CommandInterface:
                 for move in self._moveHistory:
                     if move[2] == self.opp:
                         self.matchPattern(move[0], self.pattern.find("O"))
+                print("O", self.patternMatches)
                     
             elif bestType == "P":
                 for move in self._moveHistory:
                     if move[2] == self.player:
                         self.matchPattern(move[0], self.pattern.find("P"))
+                print("P",self.patternMatches)
             # if empty go through entire board to find it then call the rotations
             elif bestType == "_":
                 for y in range(self.height):
                     for x in range(self.width):
                         if self.board[y][x] == 0:
                             self.matchPattern((y, x), self.pattern.find("_"))
+                print("_", self.patternMatches)
        
             elif bestType == "*":
                 for y in range(self.height):
                     for x in range(self.width):
                         self.matchPattern((y, x), 0)
+                print("*", self.patternMatches)
 
 
         if args != 696969:
@@ -1044,6 +1049,11 @@ class CommandInterface:
         numMoves = ((self._numMoves+1)//2) * 8 + self._numMoves # num moves p1
         numMovesOpp = (self._numMoves//2) * 8 + self._numMoves # num moves p2
         
+        if self.player == 2:
+            tmp = numMovesOpp
+            numMovesOpp = numMoves
+            numMoves = tmp
+
         findMin = []
         
         if hasWalls:
@@ -1061,10 +1071,6 @@ class CommandInterface:
         
         least = min(findMin)
 
-        if self.player == 2:
-            tmp = numMovesOpp
-            numMovesOpp = numMoves
-            numMoves = tmp
 
         if least == numWalls:
             return "X"
