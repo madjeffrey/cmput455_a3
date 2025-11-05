@@ -1,0 +1,36 @@
+=== Test 32 ===
+Command: position_evaluation
+Program timed out
+
+
+This test will be marked.
+=== Test 37 ===
+Command: position_evaluation
+Expected:
+4.2
+Received:
+1192.2
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 41 ===
+Command: position_evaluation
+Expected:
+40.0
+Received:
+1228.0
+
+Resulting status code is correct
+
+This test will be marked.
+Summary report:
+42 tests performed
+41 / 42 output statuses matched.
+39 / 42 command outputs matched.
+1 / 42 tests timed out.
+0 / 42 tests crashed.
+Marks report
+12 / 15 marked tests
+
+Finished after 7.33 seconds.

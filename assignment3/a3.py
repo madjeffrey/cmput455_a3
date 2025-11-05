@@ -793,7 +793,6 @@ class CommandInterface:
         """
         # new position to evaluate so reset parameters
         self.patternMatches = []
-        ## seems like something is wrong with my subset functino for pattern matches
         self.value = 0
 
         # get opp
@@ -813,6 +812,7 @@ class CommandInterface:
                 # everything is of the form X****
                 # compare all verticals going down
                 #! could save time by doing some check for length being cut off so only consider long enough diagonals
+
                 for col in range(self.width):
                     # straight and 2 diagonals
                     self.matchLine((1,0), 0, col, 1)
@@ -865,9 +865,8 @@ class CommandInterface:
             elif bestType == "*":
                 for y in range(self.height):
                     for x in range(self.width):
-                        self.matchPattern((y, x), 0)
+                        self.matchPattern((y, x), 0)   
                 print("*", self.patternMatches)
-
 
         if args != 696969:
             print(self.value)
@@ -957,7 +956,7 @@ class CommandInterface:
         # the pattern matches
         # check if the pattern is a subset
         for match in self.patternMatches:
-            # checks for horizontal and vertical
+            # check if match is a single point and this single point is in self.patterns retnrun false 
             # check if line1 is a subset of line2
             if self.is_line_subset(match[0], match[1], (startRow, startCol), (row,col), match[2], lineType):
                 # i don't have to care about tie breakers because that has already been handled
@@ -976,7 +975,8 @@ class CommandInterface:
         """
         
         # First check: Must be the same line type (same direction)
-        if direction1 != direction2:
+        # if it is a singleton then it should match for all directions regardless of what it's percieved direction is
+        if direction1 != direction2 and subsetEnd != subsetStart:
             return False
         
         # Second check: Must be collinear (on the same infinite line)
@@ -1049,12 +1049,12 @@ class CommandInterface:
         numMoves = ((self._numMoves+1)//2) * 8 + self._numMoves # num moves p1
         numMovesOpp = (self._numMoves//2) * 8 + self._numMoves # num moves p2
         
+        findMin = []
+
         if self.player == 2:
             tmp = numMovesOpp
             numMovesOpp = numMoves
             numMoves = tmp
-
-        findMin = []
         
         if hasWalls:
             findMin.append(numWalls)
@@ -1072,13 +1072,13 @@ class CommandInterface:
         least = min(findMin)
 
 
-        if least == numWalls:
+        if least == numWalls and hasWalls:
             return "X"
-        if least == numMoves:
-            return "P"
-        if least == numMovesOpp:
+        if least == numMovesOpp and hasOpp:
             return "O"
-        if least == numEmpty:
+        if least == numMoves and hasPlayer:
+            return "P"
+        if least == numEmpty and hasEmpty:
             return "_"
         
 

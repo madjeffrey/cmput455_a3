@@ -1,0 +1,119 @@
+=== Test 12 ===
+Command: position_evaluation
+Expected:
+20.4
+Received:
+P [((0, 0), (4, 0), (1, 0)), ((0, 0), (0, 4), (0, 1)), ((0, 4), (4, 4), (1, 0)), ((4, 0), (4, 4), (0, 1))]
+20.4
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 17 ===
+Command: position_evaluation
+Expected:
+-7.0
+Received:
+P [((1, 5), (7, -1), (-1, 1)), ((2, 5), (8, 5), (1, 0)), ((2, 5), (2, -1), (0, 1))]
+O [((1, 5), (7, -1), (-1, 1)), ((2, 5), (8, 5), (1, 0)), ((2, 5), (2, -1), (0, 1)), ((6, 0), (0, 0), (1, 0)), ((0, 2), (6, 2), (1, 0)), ((0, 3), (6, 3), (1, 0)), ((6, 0), (6, 6), (0, 1))]
+-7.0
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 22 ===
+Command: position_evaluation
+Expected:
+4.2
+Received:
+P [((0, 0), (0, 4), (0, 1))]
+P [((0, 0), (0, 4), (0, 1))]
+4.2
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 27 ===
+Command: move_evaluation
+Expected:
+-2.2 0 -4.4 15.6 17.8 0
+Received:
+O []
+P [((0, -1), (0, 1), (0, 1))]
+O []
+P []
+O []
+P [((-1, 0), (1, 0), (1, 0)), ((3, 2), (1, 0), (1, 1))]
+O [((1, -1), (1, 2), (0, 1)), ((1, 3), (1, 0), (0, 1))]
+P [((1, -1), (1, 2), (0, 1)), ((1, 3), (1, 0), (0, 1)), ((-1, -1), (1, 1), (1, 1)), ((3, 1), (1, 1), (1, 0))]
+O [((-1, 2), (2, 2), (1, 0)), ((3, 2), (0, 2), (1, 0))]
+P [((-1, 2), (2, 2), (1, 0)), ((3, 2), (0, 2), (1, 0)), ((3, 0), (1, 2), (-1, 1))]
+O []
+P []
+-2.2 0 -4.4 15.6 17.8 0
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 28 ===
+Command: policy_moves
+Expected:
+0.054 0.091 0.017 0.355 0.392 0.091
+Received:
+O []
+P [((0, -1), (0, 1), (0, 1))]
+O []
+P []
+O []
+P [((-1, 0), (1, 0), (1, 0)), ((3, 2), (1, 0), (1, 1))]
+O [((1, -1), (1, 2), (0, 1)), ((1, 3), (1, 0), (0, 1))]
+P [((1, -1), (1, 2), (0, 1)), ((1, 3), (1, 0), (0, 1)), ((-1, -1), (1, 1), (1, 1)), ((3, 1), (1, 1), (1, 0))]
+O [((-1, 2), (2, 2), (1, 0)), ((3, 2), (0, 2), (1, 0))]
+P [((-1, 2), (2, 2), (1, 0)), ((3, 2), (0, 2), (1, 0)), ((3, 0), (1, 2), (-1, 1))]
+O []
+P []
+0.054 0.091 0.017 0.355 0.392 0.091
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 32 ===
+Command: position_evaluation
+Program timed out
+
+
+This test will be marked.
+=== Test 37 ===
+Command: position_evaluation
+Expected:
+4.2
+Received:
+P [((0, 0), (0, 4), (0, 1))]
+P [((0, 0), (0, 4), (0, 1))]
+4.2
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 41 ===
+Command: position_evaluation
+Expected:
+40.0
+Received:
+P [((0, 3), (0, 0), (0, 1))]
+P [((0, 3), (0, 0), (0, 1))]
+40.0
+
+Resulting status code is correct
+
+This test will be marked.
+Summary report:
+42 tests performed
+41 / 42 output statuses matched.
+34 / 42 command outputs matched.
+1 / 42 tests timed out.
+0 / 42 tests crashed.
+Marks report
+7 / 15 marked tests
+
+Finished after 7.36 seconds.

@@ -1,0 +1,119 @@
+=== Test 12 ===
+Command: position_evaluation
+Expected:
+20.4
+Received:
+p
+20.4
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 17 ===
+Command: position_evaluation
+Expected:
+-7.0
+Received:
+p
+O
+-7.0
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 22 ===
+Command: position_evaluation
+Expected:
+4.2
+Received:
+p
+p
+4.2
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 27 ===
+Command: move_evaluation
+Expected:
+-2.2 0 -4.4 15.6 17.8 0
+Received:
+O
+p
+O
+p
+O
+p
+O
+p
+O
+p
+O
+p
+-2.2 0 -4.4 15.6 17.8 0
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 28 ===
+Command: policy_moves
+Expected:
+0.054 0.091 0.017 0.355 0.392 0.091
+Received:
+O
+p
+O
+p
+O
+p
+O
+p
+O
+p
+O
+p
+0.054 0.091 0.017 0.355 0.392 0.091
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 32 ===
+Command: position_evaluation
+Program timed out
+
+
+This test will be marked.
+=== Test 37 ===
+Command: position_evaluation
+Expected:
+4.2
+Received:
+p
+p
+4.2
+
+Resulting status code is correct
+
+This test will be marked.
+=== Test 41 ===
+Command: position_evaluation
+Expected:
+40.0
+Received:
+p
+p
+40.0
+
+Resulting status code is correct
+
+This test will be marked.
+Summary report:
+42 tests performed
+41 / 42 output statuses matched.
+34 / 42 command outputs matched.
+1 / 42 tests timed out.
+0 / 42 tests crashed.
+Marks report
+7 / 15 marked tests
+
+Finished after 7.33 seconds.
