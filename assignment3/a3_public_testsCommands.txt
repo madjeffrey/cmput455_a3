@@ -30,8 +30,8 @@ policy_moves
 init_game 1000 1000 0.5 0 
 timelimit 5
 load_patterns randompattern.txt
-position_evaluation
 policy_moves
+position_evaluation
 init_game 4 1 0.5 0 1121
 timelimit 1000
 load_patterns subsumepattern.txt

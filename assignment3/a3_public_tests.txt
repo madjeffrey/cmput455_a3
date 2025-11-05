@@ -158,3 +158,21 @@ timelimit 2
 ?position_evaluation
 40.0
 = 1
+
+
+# added my test
+init_game 4 4 0.5 0 
+= 1
+
+timelimit 2
+= 1
+
+play 0 0
+= 1
+
+?load_patterns pat.txt
+= 1
+
+?position_evaluation
+5.0
+= 1

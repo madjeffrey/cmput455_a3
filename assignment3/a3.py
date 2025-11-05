@@ -68,10 +68,8 @@ class CommandInterface:
             return False
         try:
             signal.signal(signal.SIGALRM, handler)
-            #! signal.alarm(self.timelimit)
-            signal.alarm(1000)
-
-
+            signal.alarm(self.timelimit)
+            #t signal.alarm(1000)
 
             return self.command_dict[command](args)
         
@@ -149,12 +147,12 @@ class CommandInterface:
 
 
         
-        #Initialize game state
+        # Initialize game state
         self.width = w
         self.height = h
         self.handicap = p
         self.patternMatches = []
-        self._moveHistory = [] #((row:int,col:int),(_p1Score:float, _p2Score:float), cur_player:int, winner:int)
+        self._moveHistory = [] # ((row:int,col:int),(_p1Score:float, _p2Score:float), cur_player:int, winner:int)
         if s == 0:
             self.score_cutoff = float("inf")
         else:
@@ -197,7 +195,8 @@ class CommandInterface:
             else:
                 self.player = 1
 
-        #default time limit
+        # default time limit
+        #! make sure this is the same as before
         self.timelimit = 1
 
         # Game state  
@@ -260,6 +259,7 @@ class CommandInterface:
     def make_move(self, x, y):
         self.board[y][x] = self.player
         self._moveHistory.append(((y,x),(-1, -1), self.player , -1))
+        self._numMoves += 1
         if self.player == 1:
             self.player = 2
         else:
@@ -271,6 +271,7 @@ class CommandInterface:
         """
         self.board[y][x] = 0
         self._moveHistory.pop()
+        self._numMoves -= 1
         if self.player == 1:
             self.player = 2
         else:
@@ -329,28 +330,28 @@ class CommandInterface:
                     lone_piece = True # Keep track of the special case of a lone piece
                     # Horizontal
                     hl = 1
-                    if x == 0 or self.board[y][x-1] != c: #Check if this is the start of a horizontal line
+                    if x == 0 or self.board[y][x-1] != c: # Check if this is the start of a horizontal line
                         x1 = x+1
-                        while x1 < self.width and self.board[y][x1] == c: #Count to the end
+                        while x1 < self.width and self.board[y][x1] == c: # Count to the end
                             hl += 1
                             x1 += 1
                     else:
                         lone_piece = False
                     # Vertical
                     vl = 1
-                    if y == 0 or self.board[y-1][x] != c: #Check if this is the start of a vertical line
+                    if y == 0 or self.board[y-1][x] != c: # Check if this is the start of a vertical line
                         y1 = y+1
-                        while y1 < self.height and self.board[y1][x] == c: #Count to the end
+                        while y1 < self.height and self.board[y1][x] == c: # Count to the end
                             vl += 1
                             y1 += 1
                     else:
                         lone_piece = False
                     # Diagonal
                     dl = 1
-                    if y == 0 or x == 0 or self.board[y-1][x-1] != c: #Check if this is the start of a diagonal line
+                    if y == 0 or x == 0 or self.board[y-1][x-1] != c: # Check if this is the start of a diagonal line
                         x1 = x+1
                         y1 = y+1
-                        while x1 < self.width and y1 < self.height and self.board[y1][x1] == c: #Count to the end
+                        while x1 < self.width and y1 < self.height and self.board[y1][x1] == c: # Count to the end
                             dl += 1
                             x1 += 1
                             y1 += 1
@@ -358,10 +359,10 @@ class CommandInterface:
                         lone_piece = False
                     # Anit-diagonal
                     al = 1
-                    if y == 0 or x == self.width-1 or self.board[y-1][x+1] != c: #Check if this is the start of an anti-diagonal line
+                    if y == 0 or x == self.width-1 or self.board[y-1][x+1] != c: # Check if this is the start of an anti-diagonal line
                         x1 = x-1
                         y1 = y+1
-                        while x1 >= 0 and y1 < self.height and self.board[y1][x1] == c: #Count to the end
+                        while x1 >= 0 and y1 < self.height and self.board[y1][x1] == c: # Count to the end
                             al += 1
                             x1 -= 1
                             y1 += 1
@@ -384,9 +385,15 @@ class CommandInterface:
         return p1_score, p2_score
     
     def score(self, args):
+        #! must comment out
+        # p1, p2 = self.calculate_scoreFull()
+        # assert self._p1Score == p1 and self._p2Score== p2, "scores do not match"
+        
         print(self._p1Score, self._p2Score)
+        return True
         # print(self.calculate_score())
     
+
     # Returns is_terminal, winner
     # Assumes no draws
     def is_terminalSlow(self):
@@ -485,7 +492,10 @@ class CommandInterface:
         if self._won == 0 and self.board[r][c] == 0:
             return True
         
-        return False      
+        return False    
+
+    def is_pos_avail(self, c, r):
+        return self.board[r][c] == 0    
     
     # this function may be modified as needed, but should behave as expected
     def play(self, args):
@@ -493,20 +503,30 @@ class CommandInterface:
             >> play <col> <row>
             Places current player's piece at position (<col>, <row>).
         '''
-        row = int(args[1])
-        col = int(args[0])
-        if not self.isLegal(col, row):
-            return -1
-        if self._won != 0:
-            return self._won
+        if not self.arg_check(args, "x y"):
+            return False
+        
+        try:
+            col = int(args[0])
+            row = int(args[1])
+        except ValueError:
+            print("Illegal move: " + " ".join(args), file=sys.stderr)
+            return False
+        
+        if col < 0 or col >= len(self.board[0]) or row < 0 or row >= len(self.board) or not self.is_pos_avail(col, row):
+            raise Exception("Illegal Move")
 
         ## could these be assertions, or then this would stop the program which is not what I want
         # It is not a newGame since a move has been played
         self._newGame = False
-        # update the board state
         
         # calculate the score through all the four possible directions of lines
         self.calculate_score(row, col)
+
+
+        if self.score_cutoff != 0 and (self._p1Score >= self.score_cutoff or self._p2Score >= self.score_cutoff):
+            print("Illegal move: " + " ".join(args), "game ended.", file=sys.stderr)
+            return False
 
         # keep track of the number of moves played
         self._numMoves += 1 
@@ -516,6 +536,7 @@ class CommandInterface:
         # add the move history to the list for undo
         self._moveHistory.append(((row,col),(self._p1Score, self._p2Score), self.player, self._won))
 
+        # update the board state
         # update the board needs to happen after calcScore because it needs to check for neighbors that are not the new move
         self.board[row][col] = self.player
         if self.player== 2:
@@ -534,7 +555,7 @@ class CommandInterface:
         #     col = int(args[0])
         #     row = int(args[1])
         # except ValueError:
-        #     #print("Illegal move: " + " ".join(args), file=sys.stderr)
+        #     # print("Illegal move: " + " ".join(args), file=sys.stderr)
         #     return False
         
         # if col < 0 or col >= len(self.board[0]) or row < 0 or row >= len(self.board) or not self.is_pos_avail(col, row):
@@ -543,7 +564,7 @@ class CommandInterface:
         
         # scores = self.calculate_score()
         # if scores[0] >= self.score_cutoff or scores[1] >= self.score_cutoff:
-        #     #print("Illegal move: " + " ".join(args), "game ended.", file=sys.stderr)
+        #     # print("Illegal move: " + " ".join(args), "game ended.", file=sys.stderr)
         #     return False
 
         # # put the piece onto the board
@@ -709,7 +730,7 @@ class CommandInterface:
                 return True
 
         if 0 <= posRow < self.height and 0 <= posCol < self.width:
-            ##s can update it so that there is priority for each players move or only your moves count
+            #i can update it so that there is priority for each players move or only your moves count
             if self.board[posRow][posCol] == self.player:
                 return True
 
@@ -749,9 +770,9 @@ class CommandInterface:
         reduce = (-1*low+1)
         dom = total + len(movesEval)*reduce
         for ev in movesEval:
-            policy.append(round((ev + reduce)/dom, 3))
+            policy.append((ev + reduce)/dom)
 
-        print(*policy)
+        print(*[round(x, 3) if round(x, 3) != 0 else 0 for x in policy])
         return policy
 
     # new function to be implemented for assignment 3
@@ -769,8 +790,8 @@ class CommandInterface:
                     moveVal.append(-1*self.position_evaluation(696969))
                     self.undo_moveSimple(x, y)
         
-        moves  = [round(x, 1) if round(x, 1) != 0 else 0 for x in moveVal]
         if args != 696969:
+            moves  = [round(x, 1) if round(x, 1) != 0 else 0 for x in moveVal]
             print(*moves)
         return moveVal
 
@@ -811,7 +832,7 @@ class CommandInterface:
                 """
                 # everything is of the form X****
                 # compare all verticals going down
-                #! could save time by doing some check for length being cut off so only consider long enough diagonals
+                #i could save time by doing some check for length being cut off so only consider long enough diagonals
 
                 for col in range(self.width):
                     # straight and 2 diagonals
@@ -839,7 +860,7 @@ class CommandInterface:
                 # antidiagonals
                     self.matchLine((-1,1), self.height, -1, 1)
                     self.matchLine((-1,1), -1, self.width, -1)
-                print("X", self.patternMatches)
+                #print("X", self.patternMatches)
 
             # if player go through player history then call the rotations, have O first because likely to have less of p1
             elif bestType == "O":
@@ -847,26 +868,26 @@ class CommandInterface:
                 for move in self._moveHistory:
                     if move[2] == self.opp:
                         self.matchPattern(move[0], self.pattern.find("O"))
-                print("O", self.patternMatches)
+                #print("O", self.patternMatches)
                     
             elif bestType == "P":
                 for move in self._moveHistory:
                     if move[2] == self.player:
                         self.matchPattern(move[0], self.pattern.find("P"))
-                print("P",self.patternMatches)
+                #print("P",self.patternMatches)
             # if empty go through entire board to find it then call the rotations
             elif bestType == "_":
                 for y in range(self.height):
                     for x in range(self.width):
                         if self.board[y][x] == 0:
                             self.matchPattern((y, x), self.pattern.find("_"))
-                print("_", self.patternMatches)
+                #print("_", self.patternMatches)
        
             elif bestType == "*":
                 for y in range(self.height):
                     for x in range(self.width):
                         self.matchPattern((y, x), 0)   
-                print("*", self.patternMatches)
+                #print("*", self.patternMatches)
 
         if args != 696969:
             print(self.value)
@@ -910,10 +931,10 @@ class CommandInterface:
             adds the value of the pattern to the value of the position
             adds the start coords and end coords to the patternMatches history
 
-        ## this maybe could be optimized by considering same direction symmetries at same time but I don't think so since it still has to do all the key comparisons, might only save 1
+        #i this maybe could be optimized by considering same direction symmetries at same time but I don't think so since it still has to do all the key comparisons, might only save 1
         """
 
-        ## way to optimize by stopping subsets here
+        #i way to optimize by stopping subsets here
 
         rowInc = (direction*lineType[0])
         colInc = (direction*lineType[1])
@@ -1029,7 +1050,7 @@ class CommandInterface:
         Returns:
             char bestType: "P"or"O" = player | "X" = walls | "_" = empty tiles
         """
-        #! assert the num of moves increases when a move is played
+        ## assert the num of moves increases when a move is played - not needed since it removes it right away and then only time number of moves matters is in calculating if a state is terminal, which only matters when a move is played
         # if num moves = odd then p1 has more
         # if num moves = even then even number of moves
         # if num moves < numTiles - numMoves then empty does not matter
@@ -1086,3 +1107,18 @@ if __name__ == "__main__":
     interface = CommandInterface()
     interface.main_loop()
     
+    # # should remove but don't have to
+    # import random
+    # seen = set()
+    # seen.add((-1,-1))
+    # a = -1
+    # b = -1
+    # interface.init_game(["50", "50", "0.5", "5"])
+    # for _ in range(2500):
+    #     while (a,b) in seen:
+    #         a = random.randint(0,49)
+    #         b = random.randint(0,49)
+    #     seen.add((a,b))
+    #     interface.play([a,b])
+    #     interface.score([])
+    # interface.show([])
